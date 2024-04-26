@@ -955,7 +955,10 @@ function goPage(page){
 				}());
 			}
 			targetContainer = playersContainer;
+
 			createSocket();
+
+			$.players['player'+ 0].text = removeCharsBetweenParentheses($.players['player'+ 0].text)
 
 			if (!gameData.ai) {
 				timeData.oldTimer = -1;
@@ -964,7 +967,7 @@ function goPage(page){
 				toggleGameTimer(true);
 				timerDownTxt.text = millisecondsToTimeGame(timeData.countdown);
 
-				$.players['player'+ 1].text = textDisplay.player2;
+				$.players['player'+ 1].text = removeCharsBetweenParentheses(textDisplay.player2);
 			} else {
 				$.players['player'+ 1].text = textDisplay.computer;
 			}
@@ -992,6 +995,8 @@ function goPage(page){
 			var textTitle = '';
 
 			var winStatus = '';
+
+			buttonTiktok.visible = false;
 
 			if (textDisplay.giveup == 0) {
 				winner = Player2.entityId;
@@ -1067,7 +1072,38 @@ function goPage(page){
 			resultDescTxt.text = textMessage;
 
 			saveGame(playerData.score, playerData.opponentScore, winner);
+
+			if (socket != null) {
+				socket.disconnect();
+			}
 			break;
+		case 'result_no':
+				stopGame();
+				
+				var winner = '';
+				var winStatus = '';
+	
+				if (textDisplay.giveup == 0) {
+					winner = Player2.entityId;
+				} else if (textDisplay.giveup == 1) {
+					winner = Player1.entityId;
+				} else {
+					if (playerData.score > playerData.opponentScore) {
+						winner = Player1.entityId;
+					} else if (playerData.score < playerData.opponentScore) {
+						winner = Player2.entityId;
+					} 
+					else { // Draw
+						winner = '';
+					}
+				}
+	
+				saveGame(playerData.score, playerData.opponentScore, winner);
+	
+				if (socket != null) {
+					socket.disconnect();
+				}
+				break;
 	}
 	
 	if(targetContainer != null){
@@ -1106,8 +1142,8 @@ function createSocket() {
 			textDisplay.player1 = players[0].playerName
 			textDisplay.player2 = players[1].playerName
 
-			$.players['gamePlayer'+ 0].text = players[0].playerName;
-			$.players['gamePlayer'+ 1].text = players[1].playerName;
+			$.players['gamePlayer'+ 0].text = removeCharsBetweenParentheses(players[0].playerName);
+			$.players['gamePlayer'+ 1].text = removeCharsBetweenParentheses(players[1].playerName);
 
 			Player1 = players[0]
 			Player2 = players[1]
@@ -1117,6 +1153,9 @@ function createSocket() {
 		}
 		// online job
 		
+		$.players['gamePlayer'+ 0].text = removeCharsBetweenParentheses($.players['gamePlayer'+ 0].text);
+		$.players['gamePlayer'+ 1].text = removeCharsBetweenParentheses($.players['gamePlayer'+ 1].text);
+
 		gameData.player = 0;
 		gameData.startPlayer = 0;
 
@@ -1154,11 +1193,6 @@ function createSocket() {
 		// Handle opponent's move
 		if (gameData.ai == false) {
 			togglePieceDragEvent(moveData.data, moveData.con);
-			if (moveData.con == 'drop')
-			{
-				checkGameComplete();
-				displayPlayerTurn();
-			}
 		}
 	});
 
@@ -1168,7 +1202,12 @@ function createSocket() {
 
 	// Listen for nameTaken event
 	socket.on('nameTaken', () => {
-		redirectToWithAuth('/login', "", "");
+		if (socket != null) {
+			if (textDisplay.bEmployee == false) socket.emit('giveup', 0);
+			else socket.emit('giveup', 1);
+			goPage('result_no');
+		}
+		redirectToWithAuth('/login', "You are already playing", "");
 	});
 
 	joinGame(socket)
@@ -1254,7 +1293,6 @@ function saveGame(score, opponentscore, winner){
 	const tokenkey = urlParams.get('t'); // Returns 'value1'
 	localStorage.setItem('t', tokenkey);
 
-	localStorage.setItem('gameID', 1);
 	
 	var tokenID = localStorage.getItem("t");
 	if (tokenID != undefined && tokenID != '')
@@ -1269,7 +1307,7 @@ function saveGame(score, opponentscore, winner){
 			  if (result.success == true) {
 				if (result.PriseUsd != undefined)
 				{
-					resultPriceTxt.text = "$" + result.PriseUsd;
+					// resultPriceTxt.text = "$" + result.PriseUsd;
 					// resultDescTxt.text = "Congratulations, you won:";
 				} else {
 					// var textTitle = "The outcome of this game favors the opponent.\n\n 🙁 \n\n";
@@ -1295,8 +1333,11 @@ function saveGame(score, opponentscore, winner){
 document.addEventListener('keydown', function(event) {
     if (event.key === 'F5' || (event.key === 'r' && event.ctrlKey)) {
 		
-		event.preventDefault();
-		preventRefresh(event);
+		if (socket != null) {
+			if (textDisplay.bEmployee == false) socket.emit('giveup', 0);
+			else socket.emit('giveup', 1);
+			goPage('result_no');
+		}
 		
     }
 });
@@ -1329,6 +1370,7 @@ function buildPlayers(){
 	for(var n=0; n<2; n++){
 		$.players['gameIconContainer'+ n].removeAllChildren();
 
+		
 		if ( typeof initSocket == 'function' && multiplayerSettings.enable && socketData.online) {
 
 		}else{
@@ -1336,10 +1378,13 @@ function buildPlayers(){
 				if(gameData.ai){
 					$.players['gamePlayer'+ 1].text = textDisplay.computer;
 				}else{
-					$.players['gamePlayer'+ 1].text = textDisplay.player2;
+					$.players['gamePlayer'+ 1].text = removeCharsBetweenParentheses(textDisplay.player2);
 				}
 			}
 		}
+
+		$.players['gamePlayer'+ 0].text = removeCharsBetweenParentheses($.players['gamePlayer'+ 0].text);
+		$.players['gamePlayer'+ 1].text = removeCharsBetweenParentheses($.players['gamePlayer'+ 1].text);
 
 		$.players['gameTurn'+ n].text = '';
 		$.players['gameTimer'+ n].text = millisecondsToTimeGame(0);
@@ -2188,8 +2233,6 @@ function placePiece(r,c,player){
 			else {
 				if (((textDisplay.bEmployee == false && gameData.player == 0) || (textDisplay.bEmployee == true && gameData.player == 1)))
 				{
-					gameData.drag.x = evt.target.x;
-					gameData.drag.y = evt.target.y;
 					if (socket != null)
 					{
 						socket.emit('move', {con: 'drag', data: {
@@ -2222,55 +2265,30 @@ function placePiece(r,c,player){
 		newIcon.addEventListener("pressup", function(evt) {
 
 			if (gameData.ai == true) {
-				togglePieceDragEvent(evt, 'drop');
+				togglePieceDragEvent(evt, 'drop')
 			}
 			else if (((textDisplay.bEmployee == false && gameData.player == 0) || (textDisplay.bEmployee == true && gameData.player == 1))) {
-
-				var foundDropZone = false;
-				for(var r=0; r<gameData.settings.size; r++){
-					for(var c=0; c<gameData.settings.size; c++){
-						var thisBoard = gameData.board[r][c];
-						if(thisBoard.move){
-							if(evt.target.x >= thisBoard.x - (boardSettings.width/2) && evt.target.x <= thisBoard.x + (boardSettings.width/2)){
-								if(evt.target.y >= thisBoard.y - (boardSettings.width/2) && evt.target.y <= thisBoard.y + (boardSettings.width/2)){
-									foundDropZone = true;
-									
-									if (socket != null)
-									{
-										socket.emit('move', {con: 'drop', data: {
-											'target': {
-												'x': evt.target.x,
-												'y': evt.target.y,
-												'shadow': {
-													'x': evt.target.shadow.x,
-													'y': evt.target.shadow.y
-												},
-												'offset': evt.target.offset
-											},
-											'stageX': evt.stageX,
-											'stageY': evt.stageY,
-											'currentTarget': {
-												'nx': evt.currentTarget.nx,
-												'ny': evt.currentTarget.ny
-											},
-											player: gameData.player
-										}});
-									}
-								}
-							}
-						}
-					}
-				}
-
-				if(!foundDropZone && gameData.drag.status){
-					resetPieces();
-					resetValidMove();
-					highlightPiece();
-
-					evt.target.x = gameData.drag.x;
-					evt.target.y = gameData.drag.y;
-					evt.target.shadow.x = gameData.drag.x + boardSettings.shadowX;
-					evt.target.shadow.y = gameData.drag.y + boardSettings.shadowY;
+				
+				if (socket != null)
+				{
+					socket.emit('move', {con: 'drop', data: {
+						'target': {
+							'x': evt.target.x,
+							'y': evt.target.y,
+							'shadow': {
+								'x': evt.target.shadow.x,
+								'y': evt.target.shadow.y
+							},
+							'offset': evt.target.offset
+						},
+						'stageX': evt.stageX,
+						'stageY': evt.stageY,
+						'currentTarget': {
+							'nx': evt.currentTarget.nx,
+							'ny': evt.currentTarget.ny
+						},
+						player: gameData.player
+					}});
 				}
 			}
 		});
@@ -2278,6 +2296,10 @@ function placePiece(r,c,player){
 
 	boardIconContainer.addChild(newIconHighlight, newIconShadow, newIcon);
 	gameData.piece.push(newIcon);
+}
+
+function removeCharsBetweenParentheses(str) {
+    return str.replace(/\([^)]*\)/g, '');
 }
 
 var canvas1 = document.getElementById("gameCanvas");
@@ -2394,12 +2416,12 @@ function togglePieceDragEvent(obj, con){
 		
 		case 'move':
 			if(gameData.drag.status){
-				obj.target.offset = offset;
+				// obj.target.offset = offset;
 				var local = boardContainer.globalToLocal(obj.stageX, obj.stageY);
-				var moveX = ((local.x) + obj.target.offset.x);
-				var moveY = ((local.y) + obj.target.offset.y);
-				// var moveX = ((local.x) + (obj.target.offset == undefined ? 0 : obj.target.offset.x));
-				// var moveY = ((local.y) + (obj.target.offset == undefined ? 0 : obj.target.offset.y));
+				// var moveX = ((local.x) + obj.target.offset.x);
+				// var moveY = ((local.y) + obj.target.offset.y);
+				var moveX = ((local.x) + (obj.target.offset == undefined ? 0 : obj.target.offset.x));
+				var moveY = ((local.y) + (obj.target.offset == undefined ? 0 : obj.target.offset.y));
 				obj.target.x = moveX;
 				obj.target.y = moveY;
 				obj.target.shadow.x = moveX + boardSettings.shadowX;
@@ -2417,16 +2439,12 @@ function togglePieceDragEvent(obj, con){
 							if(obj.target.y >= thisBoard.y - (boardSettings.width/2) && obj.target.y <= thisBoard.y + (boardSettings.width/2)){
 								foundDropZone = true;
 
-								if (gameData.ai == true) {
-									checkGameComplete();
-									togglePlayerTimer();
-								}
+								movePlayer(thisBoard.row, thisBoard.column);
 
-								if ( typeof initSocket == 'function' && multiplayerSettings.enable && socketData.online) {
-									postSocketUpdate('moveplayer', {row:thisBoard.row, column:thisBoard.column, pieceIndex:gameData.pieceIndex});
-								}else{
-									movePlayer(thisBoard.row, thisBoard.column);
-								}
+								timeData.opponentTimer = 0;
+								timeData.playerTimer = 0;
+								togglePlayerTimer();
+								checkGameComplete();
 							}
 						}
 					}
@@ -2822,16 +2840,16 @@ function updateTimerDown(){
 			type: 'GET',
 			data: {
 					't': localStorage.getItem('t'),
-					'gameID': 1,
+					'gameID': 2,
 					betUsd: Player1.betUsd
 				},
 			success: function(response) {
 				
 				Player2 = response;
 
-				textDisplay.computer = response.username;
-				textDisplay.computerTurn = response.username + ' turn';
-				$.players['player'+ 1].text = response.username;
+				textDisplay.computer = removeCharsBetweenParentheses(response.username);
+				textDisplay.computerTurn = removeCharsBetweenParentheses(response.username) + ' turn';
+				$.players['player'+ 1].text = removeCharsBetweenParentheses(response.username);
 
 				checkGameType(true);
 				goPage('game');

@@ -139,7 +139,7 @@ function buildGameCanvas(response){
 		$.players['player'+ n].color = '#fff';
 		$.players['player'+ n].textAlign = "center";
 		$.players['player'+ n].textBaseline='alphabetic';
-		$.players['player'+ 0].text = response.username;
+		$.players['player'+ 0].text = removeCharsBetweenParentheses1(response.username);
 		$.players['player'+ n].x = 0;
 		$.players['player'+ n].y = 65;
 
@@ -294,7 +294,7 @@ function buildGameCanvas(response){
 		$.players['gamePlayer'+ n].color = '#fff';
 		$.players['gamePlayer'+ n].textAlign = "center";
 		$.players['gamePlayer'+ n].textBaseline='alphabetic';
-		$.players['gamePlayer'+ n].text = textDisplay.player1;
+		$.players['gamePlayer'+ n].text = removeCharsBetweenParentheses1(textDisplay.player1);
 		$.players['gamePlayer'+ n].y += 78;
 
 		$.players['gameTimer'+ n] = new createjs.Text();
@@ -302,7 +302,7 @@ function buildGameCanvas(response){
 		$.players['gameTimer'+ n].color = '#fff';
 		$.players['gameTimer'+ n].textAlign = "center";
 		$.players['gameTimer'+ n].textBaseline='alphabetic';
-		$.players['gameTimer'+ n].text = textDisplay.player1;
+		$.players['gameTimer'+ n].text = removeCharsBetweenParentheses1(textDisplay.player1);
 		$.players['gameTimer'+ n].y += 53;
 
 		$.players['gamePlayerWin'+ n] = new createjs.Text();
@@ -326,6 +326,7 @@ function buildGameCanvas(response){
 		$.players['gamePlayerContainer'+ n].addChild($.players['gamePlayerBg'+ n], $.players['gameIconContainer'+ n], $.players['gamePlayer'+ n], $.players['gameTimer'+ n], $.players['gamePlayerWin'+ n], $.players['gameTurn'+ n], $.players['gameFlagContainer'+ n]);
 		gameContainer.addChild($.players['gamePlayerContainer'+ n]);
 	}
+
 
 	boardStroke = new createjs.Shape();
 	
@@ -466,6 +467,11 @@ function buildGameCanvas(response){
 	changeViewport(viewport.isLandscape);
 	resizeGameFunc();
 }
+
+function removeCharsBetweenParentheses1(str) {
+    return str.replace(/\([^)]*\)/g, '');
+}
+
 
 function changeViewport(isLandscape){
 	if(isLandscape){

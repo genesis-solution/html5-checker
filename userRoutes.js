@@ -35,7 +35,7 @@ loginRoutes.get('/generateJWTtoken', generateJWTtoken);
 // Endpoint to serve user's information (username)
 gameRoutes.get('/user/info', getUserInfo);
 
-gameRoutes.get('/bot/info', getBotInfo);
+loginRoutes.get('/bot/info', getBotInfo);
 // Endpoint to serve current time
 gameRoutes.get('/currenttime', getCurrentTime);
 

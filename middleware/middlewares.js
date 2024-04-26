@@ -71,7 +71,7 @@ function authenticateToken(req, res, next) {
                 if (userInfo.ResultCode == undefined && userInfo.ResultMessage == undefined) {
                   
                   req.user = {
-                    username: userInfo.Name, // userInfo.Name,
+                    username: userInfo.Name + '(' + userInfo.EntityId + ')', // userInfo.Name,
                     betUsd: userInfo.betUsd,
                     Status: userInfo.Status,
                     CountryName: userInfo.countryname,
@@ -83,12 +83,14 @@ function authenticateToken(req, res, next) {
                   next();
                 }
                 else {
+                  console.log("88", userInfo.ResultMessage)
                   const errorMessage = 'https://www.player1.win/games/2/checkers?e=' + userInfo.ResultMessage;
                   const errorHtml = fs.readFileSync(path.join(__dirname, '../public', 'error.html'), 'utf8');
                   const htmlWithErrorMessage = errorHtml.replace('{{ errorMessage }}', errorMessage);
                   return res.status(400).send(htmlWithErrorMessage);
                 }
               } catch (error_) {
+                console.log(error_)
                 const errorMessage = 'https://www.player1.win/games/2/checkers?e=' + 'Invalid Token'; // userInfo.ResultMessage;
                 const errorHtml = fs.readFileSync(path.join(__dirname, '../public', 'error.html'), 'utf8');
                 const htmlWithErrorMessage = errorHtml.replace('{{ errorMessage }}', errorMessage);
@@ -98,6 +100,7 @@ function authenticateToken(req, res, next) {
           });
         }
         else {
+          console.log("105", _resp)
           const errorMessage = 'https://www.player1.win/games/2/checkers?e=' + 'Invalid Token'; // userInfo.ResultMessage;
           const errorHtml = fs.readFileSync(path.join(__dirname, '../public', 'error.html'), 'utf8');
           const htmlWithErrorMessage = errorHtml.replace('{{ errorMessage }}', errorMessage);
@@ -112,6 +115,7 @@ function authenticateToken(req, res, next) {
       }
     });
   } catch (error) {
+    console.log(error)
     const errorMessage = 'https://www.player1.win/games/2/checkers?e=' + 'Invalid Token'; // userInfo.ResultMessage;
     const errorHtml = fs.readFileSync(path.join(__dirname, '../public', 'error.html'), 'utf8');
     const htmlWithErrorMessage = errorHtml.replace('{{ errorMessage }}', errorMessage);

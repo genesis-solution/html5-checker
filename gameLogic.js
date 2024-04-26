@@ -13,7 +13,7 @@ function handleSocketEvents(io) {
 
         // Handle joinGame event
         socket.on('joinGame', (player) => {
-            if (player.player.entityId != '' && !isNameTaken(player.playerName) && !isRoomTaken(player.playerName)) { // && !isNameTakenFromTotalPlayers(player.playerName)
+            if (player.player.entityId != '' && !isNameTaken(player.player.entityId) && !isRoomTaken(player.player.entityId)) { // && !isNameTakenFromTotalPlayers(player.playerName)
                 // If the name is not taken, proceed
                 socket.playerName = player.playerName; // Store the player's name in the socket object
                 socket.TokenId = player.player.TokenId;
@@ -34,6 +34,7 @@ function handleSocketEvents(io) {
                     const date = new Date();
                     const roomName = `Room-${date.getTime()}`;
                     console.log("created room", roomName)
+
 
                     let obj_player1 = { id: player1.id, name: player1.playerName, username: player1.playerName, playerName: player1.playerName, CountryName: player1.CountryName, entityId: player1.entityId, TokenId: player1.TokenId, gameID: player1.gameID, Status: player1.Status, betUsd: player1.betUsd, CountryName: player1.CountryName, isBot: player1.isBot };
                     let obj_player2 = { id: player2.id, name: player2.playerName, username: player2.playerName, playerName: player2.playerName, CountryName: player2.CountryName, entityId: player2.entityId, TokenId: player2.TokenId, gameID: player2.gameID, Status: player2.Status, betUsd: player2.betUsd, CountryName: player2.CountryName, isBot: player2.isBot };
@@ -80,8 +81,6 @@ function handleSocketEvents(io) {
                                   {
                                     const resultValue = result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['NS1:'+func_name+'Response'][0]['return'][0]['_'];
                                     var returnValue = JSON.parse(resultValue)
-
-                                    console.log(returnValue)
                     
                                     if (returnValue.ResultCode == 0 && returnValue.ResultMessage == 'OK') {
                                         obj_player1['games_entryID'] = returnValue.games_entryID;
@@ -124,6 +123,8 @@ function handleSocketEvents(io) {
                 }
             } else {
                 // Inform client that the name is already taken
+
+                console.log("already joined!", player.player.entityId)
                 socket.emit('nameTaken');
             }
         });
@@ -135,12 +136,12 @@ function handleSocketEvents(io) {
                 for (const roomName in rooms) {
                     if (rooms.hasOwnProperty(roomName)) {
                         const room = rooms[roomName];
-                        if (room.player1.id === socket.id || room.player2.id === socket.id) {
-                            io.to(room.player1.id).emit('opponentMove', moveData);
-                            io.to(room.player2.id).emit('opponentMove', moveData);
-                        }
+                        io.to(room.player2.id).emit('opponentMove', moveData);
+                        io.to(room.player1.id).emit('opponentMove', moveData);
                     }
                 }
+            } else {
+                console.log("room not found");
             }
         });
 
@@ -225,17 +226,15 @@ function handleSocketEvents(io) {
         socket.on('disconnect', () => {
             const roomName1 = findRoomBySocketId(socket.id);
 
-            const index = waitingPlayers.indexOf(socket);
+            const index = waitingPlayers.findIndex(obj => obj.id == socket.id);
             if (index !== -1) {
                 waitingPlayers.splice(index, 1);
             }
 
-            const index3 = waitingPlayers.indexOf(socket);
+            const index3 = waitingPlayers.findIndex(obj => obj.id == socket.id);
             if (index3 !== -1) {
                 waitingPlayers.splice(index3, 1);
             }
-
-            console.log("roomName", roomName1)
 
             if (roomName1) {
                 for (const roomName in rooms) {
@@ -316,12 +315,12 @@ function handleSocketEvents(io) {
         socket.on('disconnect_game', () => {
             const roomName1 = findRoomBySocketId(socket.id);
 
-            const index = waitingPlayers.indexOf(socket);
+            const index = waitingPlayers.findIndex(obj => obj.id == socket.id);
             if (index !== -1) {
                 waitingPlayers.splice(index, 1);
             }
 
-            const index3 = waitingPlayers.indexOf(socket);
+            const index3 = waitingPlayers.findIndex(obj => obj.id == socket.id);
             if (index3 !== -1) {
                 waitingPlayers.splice(index3, 1);
             }
@@ -355,27 +354,18 @@ function findRoomBySocketId(socketId) {
   // Helper function to check if the name is already taken
 function isNameTaken(playerName) {
     for (const player of waitingPlayers) {
-        if (player.playerName == playerName) {
+        if (player.entityId == playerName) {
             return true;
         }
     }
     return false;
   }
-  
-function isNameTakenFromTotalPlayers(playerName) {
-    for (const player of totalBotPlayers) {
-        if (player.playerName == playerName) {
-            return true;
-        }
-    }
-    return false;
-  }
-  
+
   function isRoomTaken(playerName) {
     for (const roomName in rooms) {
       if (rooms.hasOwnProperty(roomName)) {
           const room = rooms[roomName];
-          if (room.player1.name === playerName || room.player1.id === playerName) {
+          if (room.player1.entityId === playerName || room.player2.entityId === playerName) {
             return true;
           }
       }

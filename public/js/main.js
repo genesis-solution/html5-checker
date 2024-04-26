@@ -56,13 +56,12 @@ function initMain(){
 		// Get the value of a specific parameter
 		const tokenkey = urlParams.get('t'); // Returns 'value1'
 		localStorage.setItem('t', tokenkey);
-		localStorage.setItem('gameID', 1);
 		$.ajax({
 			url: '/user/info',
 			type: 'GET',
 			data: {
 				't': localStorage.getItem('t'),
-				'gameID': localStorage.getItem('gameID')
+				'gameID': 2
 			},
 			success: function(response) {
 				buildGameCanvas(response);
@@ -74,7 +73,7 @@ function initMain(){
 				resizeCanvas();
 			},
 			error: function(xhr, status, error) {
-			window.location.replace('/login?t='+tokenkey);
+				window.location.replace('/login?t='+tokenkey);
 			}
 		});
 	}

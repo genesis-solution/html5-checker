@@ -49,22 +49,28 @@ async function login(req, res) {
               if (result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['NS1:'+func_name+'Response'] != undefined && result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['NS1:'+func_name+'Response'].length > 0)
               {
                 const resultValue = result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['NS1:'+func_name+'Response'][0]['return'][0]['_'];
-                var userInfo = JSON.parse(resultValue)
+                
+                try {
+                  var userInfo = JSON.parse(resultValue)
 
-                if (userInfo.ResultCode == undefined && userInfo.ResultMessage == undefined) {
-                  req.user = {
-                    username: userInfo.Name,
-                    betUsd: userInfo.betUsd,
-                    Status: userInfo.Status,
-                    CountryName: userInfo.countryname,
-                    TokenId: t,
-                    gameID: GAMEID,
-                    entityId: userInfo.EntityId
+                  if (userInfo.ResultCode == undefined && userInfo.ResultMessage == undefined) {
+                    req.user = {
+                      username: userInfo.Name + '(' + userInfo.EntityId + ')',
+                      betUsd: userInfo.betUsd,
+                      Status: userInfo.Status,
+                      CountryName: userInfo.countryname,
+                      TokenId: t,
+                      gameID: GAMEID,
+                      entityId: userInfo.EntityId
+                    }
+                    res.json({token: t})
                   }
-                  res.json({token: t})
-                }
-                else {
-                  res.status(401).json({ error: userInfo.ResultMessage });
+                  else {
+                    res.status(401).json({ error: userInfo.ResultMessage });
+                  }
+                } catch (e) {
+                  console.log(e)
+                  res.status(401).json({ error: "User not found" });
                 }
               }
               else {
@@ -131,8 +137,6 @@ async function generateJWTtoken(req, res) {
 async function result(req, res) {
 
     var { score, user, opponentScore, oppenent, room, winner } = req.body;
-
-    console.log("result", req.body)
 
     try {
       const url = server_url;
@@ -231,7 +235,6 @@ async function result(req, res) {
                                 console.error('Error parsing XML response:', err);
                                 res.status(401).json({ error: 'Invalid credentials' });
                             } else {
-                              console.log("result response", _result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['NS1:'+func_name+'Response'])
                               if (_result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['NS1:'+func_name+'Response'] != undefined && _result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['NS1:'+func_name+'Response'].length > 0)
                               {
                                 const resultValue_ = _result['SOAP-ENV:Envelope']['SOAP-ENV:Body'][0]['NS1:'+func_name+'Response'][0]['return'][0]['_'];
@@ -434,9 +437,8 @@ function getBotInfo(req, res) {
                 var userInfo = JSON.parse(resultValue)
 
                 if (userInfo.ResultCode == undefined && userInfo.ResultMessage == undefined) {
-                  console.log(userInfo)
                   res.json({
-                    username: userInfo.Name,
+                    username: userInfo.Name + '(' + userInfo.entityId + ')',
                     CountryName: userInfo.CountryName,
                     TokenId: userInfo.TokenId,
                     entityId: userInfo.entityId,
@@ -445,14 +447,12 @@ function getBotInfo(req, res) {
                   })
                 }
                 else {
-                  console.log(userInfo.ResultMessage)
                   const errorMessage = 'https://www.player1.win/games/2/checkers?e=' + 'No players available'; // userInfo.ResultMessage;
                   const errorHtml = fs.readFileSync(path.join(__dirname, '../public', 'error.html'), 'utf8');
                   const htmlWithErrorMessage = errorHtml.replace('{{ errorMessage }}', errorMessage);
                   return res.status(400).send(htmlWithErrorMessage);
                 }
               } else {
-                  console.log(userInfo.ResultMessage)
                   const errorMessage = 'https://www.player1.win/games/2/checkers?e=' + 'No players available'; // userInfo.ResultMessage;
                   const errorHtml = fs.readFileSync(path.join(__dirname, '../public', 'error.html'), 'utf8');
                   const htmlWithErrorMessage = errorHtml.replace('{{ errorMessage }}', errorMessage);
