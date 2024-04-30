@@ -48,7 +48,7 @@ var boardSettings = {
 	showPlayerHighlight:true,
 	showPlayerMove: true,
 	timer:90000,
-	timerDown: 15000
+	timerDown: 60000
 };
 
 const possibleColors = [
@@ -145,7 +145,7 @@ var shareMessage = 'I just won $[SCORE] on player1.win, Let’s play Connect Fou
 $.editor = {enable:false};
 var playerData = {score:0, opponentScore:0};
 var gameData = {paused:true, moving:false, icon:0, iconSwitch:false, icons:['white','black'], type:'classic', custom:{size:0}, settings:{size:0, multipleJump:true, rowFill:0}, drag:{status:false,x:0,y:0}, player:0, ai:false, aiMove:false, complete:false};
-var timeData = {enable:false, startDate:null, nowDate:null, timer:0, oldTimer:0, isDown: false, playerTimer:0, opponentTimer:0, playerAccumulate:0, opponentAccumulate:0};
+var timeData = {countdown: 60000, enable:false, startDate:null, nowDate:null, timer:0, oldTimer:0, isDown: false, playerTimer:60000, opponentTimer:0, playerAccumulate:60000, opponentAccumulate:0};
 var tweenData = {score:0, tweenScore:0};
 
 /*!
@@ -965,7 +965,7 @@ function goPage(page){
 				timeData.countdown = boardSettings.timerDown
 				timeData.isDown = true
 				toggleGameTimer(true);
-				timerDownTxt.text = millisecondsToTimeGame(timeData.countdown);
+				//timerDownTxt.text = millisecondsToTimeGame(timeData.countdown);
 
 				$.players['player'+ 1].text = removeCharsBetweenParentheses(textDisplay.player2);
 			} else {
@@ -2756,10 +2756,12 @@ function updateGame(){
 			timeData.elapsedTime = Math.floor((timeData.nowDate.getTime() - timeData.startDate.getTime()));
 
 			if(gameData.player == 0){
-				timeData.playerTimer = Math.floor(timeData.elapsedTime + timeData.playerAccumulate);
+				// timeData.playerTimer = Math.floor(timeData.elapsedTime + timeData.playerAccumulate);
+				timeData.playerTimer = Math.floor(timeData.countdown - timeData.elapsedTime);
 			}
 			else{
-				timeData.opponentTimer = Math.floor(timeData.elapsedTime + timeData.opponentAccumulate);	
+				//timeData.opponentTimer = Math.floor(timeData.elapsedTime + timeData.opponentAccumulate);	
+				timeData.opponentTimer = Math.floor(timeData.countdown - timeData.elapsedTime);
 			}
 
 			if (gameData.ai == false) {
@@ -2779,17 +2781,17 @@ function updateTimer(){
 	$.players['gameTimer'+ 0].text = millisecondsToTimeGame(timeData.playerTimer);
 	$.players['gameTimer'+ 1].text = millisecondsToTimeGame(timeData.opponentTimer);
 
-	if (timeData.playerTimer > 50000) {
+	if (timeData.playerTimer <= 10000) {
 		$.players['gameTimer'+ 0].color = '#FF0000';
-	} else if (timeData.opponentTimer > 50000) {
+	} else if (timeData.opponentTimer <= 10000) {
 		$.players['gameTimer'+ 1].color = '#FF0000';
 	} else {
 		$.players['gameTimer'+ 0].color = '#FFFFFF';
 		$.players['gameTimer'+ 1].color = '#FFFFFF';
 	}
 
-	let limitMiliSeconds = 60000;
-	if (timeData.playerTimer > limitMiliSeconds)
+	let limitMiliSeconds = 0;
+	if (timeData.playerTimer < limitMiliSeconds)
 	{
 		if (socket != null) {
 			socket.emit('giveup', 0);
@@ -2799,7 +2801,7 @@ function updateTimer(){
 		}
 	}
 
-	if (timeData.opponentTimer > limitMiliSeconds)
+	if (timeData.opponentTimer < limitMiliSeconds)
 	{
 		if (socket != null) {
 			socket.emit('giveup', 1);
@@ -2915,7 +2917,12 @@ function millisecondsToTimeGame(milli) {
 		minutes = '0'+minutes;  
 	}
 	
-	return minutes+':'+seconds;
+	if (milli > 0)
+	{
+		return minutes+':'+seconds;
+	}
+
+	return '';
 }
 
 /*!
